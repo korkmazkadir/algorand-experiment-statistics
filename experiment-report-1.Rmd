@@ -1,0 +1,154 @@
+---
+title: "Experiment Report"
+author: "Kadir Korkmaz"
+date: "December 4, 2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  fig_width: 6 
+  fig_height: 2 
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+
+
+dataFolderName <- "2020-12-04_15:29:49"
+
+# Folder which contains *.stat files
+dataFolderPath <- paste( "/home/kadir/Git/experiment-automation/output/stats/", dataFolderName, sep="")
+
+# Lists all stat files
+list_of_files <- list.files(path = dataFolderPath, recursive = TRUE, pattern = ".stat",  full.names = TRUE)
+
+# Read all data from stat files, and adds a column as FileName
+experiment_df <- list_of_files %>%
+  set_names(.) %>%
+  map_df(read_table2, .id = "FileName")
+
+colnames(experiment_df)[2] = "Date"
+colnames(experiment_df)[3] = "Time"
+colnames(experiment_df)[4] = "Type"
+colnames(experiment_df)[5] = "Round"
+colnames(experiment_df)[6] = "BlockPropagation"
+colnames(experiment_df)[7] = "BAWithOutFinalStep"
+colnames(experiment_df)[8] = "BAWithFinalStep"
+colnames(experiment_df)[9] = "ConsensusType"
+colnames(experiment_df)[10] = "BlockType"
+colnames(experiment_df)[11] = "BlockHash"
+
+```
+
+
+
+#Experiment Setup and Configuration
+
+Two nucs are connected over LAN. 50 Algorand process is deployed per nuc. Each process is using Trickle to cap the upload and download bandwidth 20Mbs each.
+TC rules are not used to add delay! Block and Vote validation disabled. Block size is 1MB.
+
+Dataset name is **`r dataFolderName`**
+
+The number of rows is **`r nrow(experiment_df)`**
+
+Maximum round number is **`r max(experiment_df$Round)`**
+
+\newpage
+# Overal Results
+
+```{r, echo=FALSE}
+
+boxplot(experiment_df[6:8],
+  main = "",
+  xlab = "Step",
+  ylab = "Seconds",
+  col = "orange",
+  border = "brown",
+  horizontal = FALSE,
+  notch = FALSE
+)
+
+```
+
+
+
+
+\newpage
+# Block Propagation Statistics
+
+```{r, echo=FALSE}
+
+hist(experiment_df$BlockPropagation, main="", xlab = "")
+
+```
+
+```{r, echo=FALSE}
+
+boxplot(experiment_df$BlockPropagation,
+  main = "",
+  xlab = "Seconds",
+  ylab = "Block Propagation",
+  col = "orange",
+  border = "brown",
+  horizontal = TRUE,
+  notch = FALSE
+)
+
+```
+
+\newpage
+# BA Elapsed Time Without Final Step Statistics
+
+
+```{r, echo=FALSE}
+
+hist(experiment_df$BAWithOutFinalStep, main="", xlab = "")
+
+```
+
+```{r, echo=FALSE}
+
+boxplot(experiment_df$BAWithOutFinalStep,
+  main = "",
+  xlab = "Seconds",
+  ylab = "BA Without Final Step",
+  col = "orange",
+  border = "brown",
+  horizontal = TRUE,
+  notch = FALSE
+)
+
+```
+
+
+
+\newpage
+# BA Elapsed Time With Final Step Statistics
+
+```{r, echo=FALSE}
+
+hist(experiment_df$BAWithFinalStep, main="", xlab = "")
+
+```
+
+```{r, echo=FALSE}
+
+boxplot(experiment_df$BAWithFinalStep,
+  main = "",
+  xlab = "Seconds",
+  ylab = "BA With Final Step",
+  col = "orange",
+  border = "brown",
+  horizontal = TRUE,
+  notch = FALSE
+)
+
+```
+
+
+
+
