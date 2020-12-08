@@ -16,41 +16,40 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
+library(data.table)
 
 
-dataFolderName <- "2020-12-08_13:08:40"
+dataFolderName <- "test"
 
 # Folder which contains *.stat files
-dataFolderPath <- paste( "/home/kadir/Git/experiment-automation/output/stats/", dataFolderName, sep="")
+dataFolderPath <- paste( "~/Git/experiment-automation/output/stats/", dataFolderName, sep="")
 
 # Lists all stat files
 list_of_files <- list.files(path = dataFolderPath, recursive = TRUE, pattern = "\\.stat$",  full.names = TRUE)
 
-# Read all data from stat files, and adds a column as FileName
-experiment_df <- list_of_files %>%
-  set_names(.) %>%
-  map_df(read_table2,  .id  = "FileName")
+
+# Read all the files and create a FileName column to store filenames
+DT <- rbindlist(sapply(list_of_files, fread, simplify = FALSE),
+                use.names = TRUE, idcol = "FileName")
+
+experiment_df <- as.data.frame(DT)
 
 experiment_df$FileName <- basename(experiment_df$FileName)
 
-
-colnames(experiment_df)[2] = "Date"
-colnames(experiment_df)[3] = "Time"
-colnames(experiment_df)[4] = "Type"
-colnames(experiment_df)[5] = "Round"
-colnames(experiment_df)[6] = "BlockPropagation"
-colnames(experiment_df)[7] = "BAWithOutFinalStep"
-colnames(experiment_df)[8] = "BAWithFinalStep"
-colnames(experiment_df)[9] = "ConsensusType"
-colnames(experiment_df)[10] = "BlockType"
-colnames(experiment_df)[11] = "BlockHash"
-
+colnames(experiment_df)[2] = "DateTime"
+colnames(experiment_df)[3] = "Round"
+colnames(experiment_df)[4] = "BlockPropagation"
+colnames(experiment_df)[5] = "BAWithOutFinalStep"
+colnames(experiment_df)[6] = "BAWithFinalStep"
+colnames(experiment_df)[7] = "ConsensusType"
+colnames(experiment_df)[8] = "BlockType"
+colnames(experiment_df)[9] = "BlockHash"
 
 ```
 
 
+# Experiment Setup and Configuration
 
-#Experiment Setup and Configuration
 
 Two nucs are connected over LAN. 50 Algorand process is deployed per nuc. Each process is using Trickle to cap the upload and download bandwidth 20Mbs each.
 TC rules are not used to add delay! Block and Vote validation disabled. Block size is 1MB.
@@ -67,13 +66,12 @@ Maximum round number is **`r max(experiment_df$Round)`**
 experiment_df %>% 
   group_by(FileName) %>%
   summarise(
-    #count = n(), 
-    mean_bp = mean(BlockPropagation, na.rm=TRUE)
+    count = n(),
+    mean_bp = mean(BlockPropagation, na.rm=TRUE),
+    mean_ba_wo_final = mean(BAWithOutFinalStep, na.rm=TRUE),
+    mean_ba_w_final = mean(BAWithFinalStep, na.rm=TRUE),
+    max_round = max(Round)
   )
-
-
-summary( experiment_df$BlockPropagation )
-
 
 
 
@@ -85,7 +83,7 @@ summary( experiment_df$BlockPropagation )
 
 ```{r, echo=FALSE}
 
-boxplot(experiment_df[6:8],
+boxplot(experiment_df[4:6],
   main = "",
   xlab = "Step",
   ylab = "Seconds",
