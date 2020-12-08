@@ -18,18 +18,21 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 
 
-dataFolderName <- "2020-12-04_15:29:49"
+dataFolderName <- "2020-12-08_13:08:40"
 
 # Folder which contains *.stat files
 dataFolderPath <- paste( "/home/kadir/Git/experiment-automation/output/stats/", dataFolderName, sep="")
 
 # Lists all stat files
-list_of_files <- list.files(path = dataFolderPath, recursive = TRUE, pattern = ".stat",  full.names = TRUE)
+list_of_files <- list.files(path = dataFolderPath, recursive = TRUE, pattern = "\\.stat$",  full.names = TRUE)
 
 # Read all data from stat files, and adds a column as FileName
 experiment_df <- list_of_files %>%
   set_names(.) %>%
-  map_df(read_table2, .id = "FileName")
+  map_df(read_table2,  .id  = "FileName")
+
+experiment_df$FileName <- basename(experiment_df$FileName)
+
 
 colnames(experiment_df)[2] = "Date"
 colnames(experiment_df)[3] = "Time"
@@ -41,6 +44,7 @@ colnames(experiment_df)[8] = "BAWithFinalStep"
 colnames(experiment_df)[9] = "ConsensusType"
 colnames(experiment_df)[10] = "BlockType"
 colnames(experiment_df)[11] = "BlockHash"
+
 
 ```
 
@@ -56,6 +60,25 @@ Dataset name is **`r dataFolderName`**
 The number of rows is **`r nrow(experiment_df)`**
 
 Maximum round number is **`r max(experiment_df$Round)`**
+
+
+```{r, echo=FALSE}
+
+experiment_df %>% 
+  group_by(FileName) %>%
+  summarise(
+    #count = n(), 
+    mean_bp = mean(BlockPropagation, na.rm=TRUE)
+  )
+
+
+summary( experiment_df$BlockPropagation )
+
+
+
+
+```
+
 
 \newpage
 # Overal Results
