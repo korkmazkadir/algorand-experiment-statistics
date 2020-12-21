@@ -21,7 +21,7 @@ library(tidyverse)
 library(data.table)
 
 
-dataFolderName <- "2020-12-09_15:31:05"
+dataFolderName <- "2020-12-20_16:37:03"
 
 # Folder which contains *.stat files
 dataFolderPath <- paste( "~/Git/experiment-automation/output/stats/", dataFolderName, sep="")
@@ -32,25 +32,40 @@ list_of_files <- list.files(path = dataFolderPath, recursive = TRUE, pattern = "
 
 # Read all the files and create a FileName column to store filenames
 DT <- rbindlist(sapply(list_of_files, fread, simplify = FALSE),
-                use.names = TRUE, idcol = "FileName")
+                use.names = FALSE, idcol = "FileName")
+
+
+#Data set contains to kinds of data, we are organizing data
 
 experiment_df <- as.data.frame(DT)
 
+colnames(experiment_df)[1] = "FileName"
+colnames(experiment_df)[2] = "Date"
+colnames(experiment_df)[3] = "Time"
+colnames(experiment_df)[4] = "Data"
+
 experiment_df$FileName <- basename(experiment_df$FileName)
 
-colnames(experiment_df)[2] = "DateTime"
-colnames(experiment_df)[3] = "Round"
-colnames(experiment_df)[4] = "BlockPropagation"
-colnames(experiment_df)[5] = "BAWithOutFinalStep"
-colnames(experiment_df)[6] = "BAWithFinalStep"
-colnames(experiment_df)[7] = "ConsensusType"
-colnames(experiment_df)[8] = "BlockType"
-colnames(experiment_df)[9] = "BlockHash"
+stats_df <- experiment_df %>% filter(str_detect(Data, 'stats'))
+stats_sp <- separate(data = stats_df, col = Data, into = c(
+              "Type",
+              "Round",
+              "BlockPropagation", 
+              "BAWithOutFinalStep",
+              "BAWithFinalStep",
+              "ConsensusType",
+              "BlockType",
+              "BlockHash"
+              ), convert = TRUE, sep = "\\\t")
 
+stats_sp$FileName <- stats_df$FileName
+
+message_df <- experiment_df %>% filter(str_detect(Data, 'messages'))
+message_df <- separate(data = message_df, col = Data, into = c("Type","Round","BlockCount", "ProposalCount","VoteCount"), convert = TRUE, sep = "\\\t")
+
+experiment_df <- stats_sp[, c("FileName", "Type", "Round", "BlockPropagation", "BAWithOutFinalStep", "BAWithFinalStep","ConsensusType", "BlockType","BlockHash")]
 
 number_of_machines <- nrow( experiment_df %>% group_by(FileName) %>% summarise(count = n()) )
-
-  
 
 
 ```
@@ -58,9 +73,13 @@ number_of_machines <- nrow( experiment_df %>% group_by(FileName) %>% summarise(c
 
 # Experiment Configuration
 
+Advanced algorand with concurrency constant **7**
+
+Dataset name is **`r dataFolderName`**
+
 Number of machines is **`r number_of_machines`**
 
-Bandwidth limit per process using Trickle: **trickle -s -v  -d 20000 -u 20000**
+Bandwidth limit per process using Trickle: **tc rules with 4 cities**
 
 tc Delay on outgoing channel: **none**
 
@@ -196,5 +215,42 @@ boxplot(experiment_df$BAWithFinalStep,
 ```
 
 
+\newpage
+# Forwarded Message Counts Per Round
 
+```{r, echo=FALSE, fig.height=4}
+
+boxplot(message_df$BlockCount,
+  main = " ",
+  xlab = "",
+  ylab = "Block Count",
+  col = "orange",
+  border = "brown",
+  horizontal = TRUE,
+  notch = FALSE
+)
+
+boxplot(message_df$ProposalCount,
+  main = " ",
+  xlab = "",
+  ylab = "Proposal Count",
+  col = "orange",
+  border = "brown",
+  horizontal = TRUE,
+  notch = FALSE
+)
+
+
+boxplot(message_df$VoteCount,
+  main = " ",
+  xlab = "",
+  ylab = "Vote Count",
+  col = "orange",
+  border = "brown",
+  horizontal = TRUE,
+  notch = FALSE
+)
+
+
+```
 
