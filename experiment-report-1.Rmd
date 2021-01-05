@@ -21,7 +21,7 @@ library(tidyverse)
 library(data.table)
 
 
-dataFolderName <- "2020-12-21_14:50:20"
+dataFolderName <- "2021-01-05_16:21:13"
 
 # Folder which contains *.stat files
 dataFolderPath <- paste( "~/Git/experiment-automation/output/stats/", dataFolderName, sep="")
@@ -79,9 +79,9 @@ Dataset name is **`r dataFolderName`**
 
 Number of machines is **`r number_of_machines`**
 
-Bandwidth limit per process using Trickle: **tc rules with 4 cities**
+Bandwidth limit per process using Trickle: **20 Mbps using tc and cgroups**
 
-tc Delay on outgoing channel: **none**
+tc Delay on outgoing channel: **50 ms delay (RTT 100ms)**
 
 \newpage
 ## Node Configuration
