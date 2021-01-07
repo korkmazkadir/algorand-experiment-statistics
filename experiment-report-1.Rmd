@@ -21,7 +21,7 @@ library(tidyverse)
 library(data.table)
 
 
-dataFolderName <- "2021-01-05_16:21:13"
+dataFolderName <- "2021-01-07_16:51:39"
 
 # Folder which contains *.stat files
 dataFolderPath <- paste( "~/Git/experiment-automation/output/stats/", dataFolderName, sep="")
@@ -55,7 +55,8 @@ stats_sp <- separate(data = stats_df, col = Data, into = c(
               "BAWithFinalStep",
               "ConsensusType",
               "BlockType",
-              "BlockHash"
+              "BlockHash",
+              "PayloadSize"
               ), convert = TRUE, sep = "\\\t")
 
 stats_sp$FileName <- stats_df$FileName
@@ -63,9 +64,18 @@ stats_sp$FileName <- stats_df$FileName
 message_df <- experiment_df %>% filter(str_detect(Data, 'messages'))
 message_df <- separate(data = message_df, col = Data, into = c("Type","Round","BlockCount", "ProposalCount","VoteCount"), convert = TRUE, sep = "\\\t")
 
-experiment_df <- stats_sp[, c("FileName", "Type", "Round", "BlockPropagation", "BAWithOutFinalStep", "BAWithFinalStep","ConsensusType", "BlockType","BlockHash")]
+experiment_df <- stats_sp[, c("FileName", "Type", "Round", "BlockPropagation", "BAWithOutFinalStep", "BAWithFinalStep","ConsensusType", "BlockType","BlockHash", "PayloadSize")]
 
 number_of_machines <- nrow( experiment_df %>% group_by(FileName) %>% summarise(count = n()) )
+
+
+#install.packages("readr")
+library(readr)
+#install.packages("jsonlite")
+library(jsonlite)
+
+node_condiguration <- read_file("~/Git/experiment-automation/config.json")
+nodeo_config_df <- fromJSON(node_condiguration)
 
 
 ```
@@ -73,11 +83,11 @@ number_of_machines <- nrow( experiment_df %>% group_by(FileName) %>% summarise(c
 
 # Experiment Configuration
 
-Advanced algorand with concurrency constant **10**
-
 Dataset name is **`r dataFolderName`**
 
-Number of machines is **`r number_of_machines`**
+Advanced algorand with concurrency constant **`r nodeo_config_df$BAStar$ConcurrencyConstant` **
+
+Number of nodes is **`r nodeo_config_df$NodeCount` **
 
 Bandwidth limit per process using Trickle: **20 Mbps using tc and cgroups**
 
@@ -88,12 +98,6 @@ tc Delay on outgoing channel: **50 ms delay (RTT 100ms)**
 
 ```{r, echo=FALSE}
 
-#install.packages("readr")
-library(readr)
-#install.packages("jsonlite")
-library(jsonlite)
-
-node_condiguration <- read_file("~/Git/experiment-automation/config.json")
 prettify(node_condiguration, indent = 4)
 
 
@@ -120,6 +124,18 @@ sanity_df <- experiment_df %>%
 
 kable(sanity_df)
 
+block_stats_df <- experiment_df %>% 
+                  group_by(Round) %>%
+                    summarise(
+                      payload_size = mean(PayloadSize, na.rm=TRUE),
+                      payload_size_mb = mean(PayloadSize, na.rm=TRUE) / 1000000
+                    )
+
+
+library(ggplot2)
+
+ggplot(block_stats_df, aes(x=Round, y=payload_size)) + geom_point(stat = "identity")
+
 
 ```
 
@@ -127,6 +143,7 @@ The number of rows in data set is **`r nrow(experiment_df)`**
 
 Maximum round number is **`r max(experiment_df$Round)`**
 
+Appended payload size is is **`r sum(block_stats_df$payload_size_mb)`** MB
 
 \newpage
 # Overal Results
