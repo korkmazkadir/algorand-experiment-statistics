@@ -21,7 +21,7 @@ library(tidyverse)
 library(data.table)
 
 
-dataFolderName <- "2021-01-07_16:51:39"
+dataFolderName <- "2021-01-08_17:08:17"
 
 # Folder which contains *.stat files
 dataFolderPath <- paste( "~/Git/experiment-automation/output/stats/", dataFolderName, sep="")
