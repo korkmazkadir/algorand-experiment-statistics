@@ -21,7 +21,7 @@ library(tidyverse)
 library(data.table)
 
 
-dataFolderName <- "2021-01-15_14:35:38"
+dataFolderName <- "2021-01-29_17:16:25"
 
 # Folder which contains *.stat files
 dataFolderPath <- paste( "~/Git/experiment-automation/output/stats/", dataFolderName, sep="")
@@ -306,6 +306,8 @@ boxplot(upload_df$ElapsedTime,
   horizontal = TRUE,
   notch = FALSE
 )
+
+summary( upload_df$MessageLength)
 
 
 grouped <- upload_df %>% group_by(FileName) %>% summarise(Count = n(), Min = min(ElapsedTime), Mean=mean(ElapsedTime), Max=max(ElapsedTime))
