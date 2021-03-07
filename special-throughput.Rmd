@@ -1,0 +1,155 @@
+---
+title: "special-throughput"
+output:
+  html_document:
+    df_print: paged
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(data.table)
+
+filePath <- "/Users/kadir/Desktop/reshape/output/512KB/512KB_CC8.out"
+data <- read.table(filePath, sep="\t", header=FALSE)
+
+colnames(data)[1] = "NodeName"
+colnames(data)[2] = "Type"
+colnames(data)[3] = "Round"
+colnames(data)[4] = "BlockPropagation"
+colnames(data)[5] = "BAWithOutFinalStep"
+colnames(data)[6] = "BAWithFinalStep"
+colnames(data)[7] = "ConsensusType"
+colnames(data)[8] = "BlockType"
+colnames(data)[9] = "BlockHash"
+colnames(data)[10] = "PayloadSize"
+
+
+
+```
+
+## Results
+
+Dataset name is **`r filePath`**
+
+
+```{r pressure, echo=FALSE}
+library(dplyr)
+
+
+#remove rounds which are smaller or equal to 5 or bigger than  15
+filteredRounds <-filter(data, Round > 5 & Round <= 15)
+                        
+groupedDF <- filteredRounds %>% 
+              group_by(NodeName) %>%
+              summarise(
+                Count = n(),
+                AppendedData = sum(PayloadSize),
+                ElapsedTime = sum(BAWithFinalStep),
+              )
+
+
+# Removes node data with less than 10 rounds
+groupedDF <- filter(groupedDF, Count == 10)
+
+#groupedDF$Throughput = groupedDF$AppendedData / groupedDF$ElapsedTime
+
+groupedDF <- mutate(groupedDF, Throughput = (groupedDF$AppendedData ) / groupedDF$ElapsedTime)
+
+
+```
+
+
+# Grouped Data
+```{r, echo=FALSE}
+
+hist(groupedDF$Throughput, main="", xlab = "")
+
+summary(groupedDF$Throughput)
+
+```
+
+
+
+# Filtered rounds, Elapsed time distribution
+```{r, echo=FALSE}
+
+hist(filteredRounds$BAWithFinalStep, main="", xlab = "")
+summary(filteredRounds$BAWithFinalStep)
+
+```
+
+
+
+# Outliers analysis on elapsed time
+```{r, echo=FALSE}
+library(dplyr)
+
+
+##I want to work on filtered data, remove it later!!!
+data <- filteredRounds
+
+hist(data$BAWithFinalStep, main="", xlab = "")
+summary(data$BAWithFinalStep)
+
+boxplot(data$BAWithFinalStep)
+
+```
+
+##  Removing outliers
+
+```{r, echo=FALSE}
+
+# Create a boxplot of the dataset, outliers are shown as two distinct points
+outliers <- boxplot(data$BAWithFinalStep, plot = FALSE)$out
+
+numberOfObservations <- nrow(data)
+outlierCount <- length(outliers)
+
+
+head(outliers)
+
+dataDFWithoutOutliers <- data
+dataDFWithoutOutliers <- dataDFWithoutOutliers[-which(dataDFWithoutOutliers$BAWithFinalStep %in% outliers ), ]
+
+
+hist(dataDFWithoutOutliers$BAWithFinalStep, main="", xlab = "")
+summary(dataDFWithoutOutliers$BAWithFinalStep)
+
+
+boxplot(dataDFWithoutOutliers$BAWithFinalStep)
+
+
+```
+
+
+The number of observations is **`r numberOfObservations`**
+
+
+The number of outlier in BAWithFinalStep **`r outlierCount`**
+
+
+##  Throudhput Distribution per round
+
+```{r, echo=FALSE,  fig.height=7}
+
+# Removes dublicates according to round number, considers only one observation
+uniqueRoundDF <- dataDFWithoutOutliers[!duplicated(dataDFWithoutOutliers$Round),]
+
+uniqueRoundDF$PayloadSize <- uniqueRoundDF$PayloadSize / 1000
+
+
+hist(uniqueRoundDF$PayloadSize,labels = TRUE)
+
+summary(uniqueRoundDF$PayloadSize)
+
+
+
+```
+
+
+
+

@@ -1,0 +1,182 @@
+---
+title: "Throughput and Latency Plots up to 16MB Macroblocks"
+output: pdf_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(data.table)
+library(dplyr)
+
+filePath <- "./jl-throughput.csv"
+data <- read.table(filePath, sep=",", header=TRUE)
+
+colnames(data)[1] = "MacroBlockSize"
+colnames(data)[2] = "Type"
+colnames(data)[3] = "MicroBlockSize"
+colnames(data)[4] = "CC"
+colnames(data)[5] = "Min"
+colnames(data)[6] = "Q1"
+colnames(data)[7] = "Median"
+colnames(data)[8] = "Mean"
+colnames(data)[9] = "Q3"
+colnames(data)[10] = "Max"
+
+
+data <- data %>% mutate(Min = Min / 1000)
+data <- data %>% mutate(Q1 = Q1 / 1000)
+data <- data %>% mutate(Median = Median / 1000)
+data <- data %>% mutate(Mean = Mean / 1000)
+data <- data %>% mutate(Q3 = Q3 / 1000)
+data <- data %>% mutate(Max = Max / 1000)
+
+
+```
+
+
+
+
+
+```{r cars, echo=FALSE ,include=FALSE}
+
+
+## Box Plot
+
+
+library(ggplot2)
+
+
+ggplot(data, aes( fill=Type,x=factor(MacroBlockSize), ymin=Min, ymax=Max, lower=Q1, middle=Median, upper=Q3)) +
+  geom_boxplot(stat='identity') +
+  labs( x = "Macro Block Size (MB)", y = "Throughput (KB/Second)") +
+  theme(legend.position="top")
+
+```
+
+
+
+
+```{r, echo=FALSE, include=FALSE}
+## Scatter Plot - Median Values
+#REMOVED
+
+ggplot(data, aes(x=factor(MacroBlockSize), y=Median, colour = factor(Type))) +
+  geom_point(position=position_jitter(h=0,w=0.2)) +
+  geom_point() +
+  labs( x = "Macro Block Size (MB)", y = "Median Throughput (KB/Second)", color = "Type\n") +
+  theme(legend.position="top")
+  #scale_y_continuous(breaks=seq(0,max(data$Median),25))
+
+
+```
+
+
+
+```{r, echo=FALSE, fig.height=10, include=FALSE}
+## Scatter Plot - Median Values with lines
+ggplot(data, aes(x=factor(MacroBlockSize), y=Median, colour = factor(Type), group=CC)) +
+  geom_point(position=position_jitter(h=0,w=0.2)) +
+  geom_line(aes( linetype=factor(CC), color="red"))+
+  geom_point() +
+  labs( x = "Macro Block Size (MB)", y = "Median Throughput (KB/Second)", color = "Type\n")+
+  theme(legend.position="top",legend.box="vertical", legend.margin=margin())
+  
+```
+
+
+
+```{r, echo=FALSE, include=FALSE}
+# Latency Plots
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(data.table)
+library(dplyr)
+
+filePath <- "./jl-latency.csv"
+latencyDF <- read.table(filePath, sep=",", header=TRUE)
+
+colnames(latencyDF)[1] = "MacroBlockSize"
+colnames(latencyDF)[2] = "Type"
+colnames(latencyDF)[3] = "MicroBlockSize"
+colnames(latencyDF)[4] = "CC"
+colnames(latencyDF)[5] = "Min"
+colnames(latencyDF)[6] = "Q1"
+colnames(latencyDF)[7] = "Median"
+colnames(latencyDF)[8] = "Mean"
+colnames(latencyDF)[9] = "Q3"
+colnames(latencyDF)[10] = "Max"
+
+```
+
+
+
+```{r, echo=FALSE, include=FALSE}
+#head(data)
+library(ggplot2)
+
+ggplot(latencyDF, aes( fill=Type,x=factor(MacroBlockSize), ymin=Min, ymax=Max, lower=Q1, middle=Median, upper=Q3)) +
+  geom_boxplot(stat='identity') +
+  labs( x = "Macro Block Size (MB)", y = "Median Latency (S)") +
+  theme(legend.position="top")
+
+```
+
+
+
+
+```{r, echo=FALSE, fig.height=10, include=FALSE}
+
+## Scatter Plot - Median Values with lines
+
+ggplot(latencyDF, aes(x=factor(MacroBlockSize), y=Median, colour = factor(Type), group=CC)) +
+  geom_point(position=position_jitter(h=0,w=0.3)) +
+  geom_line(aes( linetype=factor(CC), color="red"))+
+  geom_point() +
+  labs( x = "Macro Block Size (MB)", y = "Median Latency (S)", color = "Type\n")+
+  theme(legend.position="top",legend.box="vertical", legend.margin=margin())
+  
+```
+
+
+
+
+# Macro Block Size vs Throughput Plot
+
+```{r, echo=FALSE}
+
+filteredThrougputData <- filter(data, MacroBlockSize <= 16)
+
+ggplot(filteredThrougputData, aes(x=MacroBlockSize, y=Median, group=CC)) +
+  geom_point(position=position_jitter(h=0,w=0.2)) +
+  geom_line(aes( linetype=factor(CC), color=factor(CC) ))+
+  geom_point() +
+  labs( x = "Macro Block Size (MB)", y = "Median Throughput (KB/Second)", color = "CC", linetype="CC" )+
+  theme(legend.position="top",legend.box="vertical", legend.margin=margin())+
+  scale_x_continuous(labels = as.character(filteredThrougputData$MacroBlockSize), breaks = filteredThrougputData$MacroBlockSize)
+
+```
+
+
+# Macro Block Size vs Latency Plot
+```{r, echo=FALSE}
+
+filteredLatencyData <- filter(latencyDF, MacroBlockSize <= 16)
+
+ggplot(filteredLatencyData, aes(x=MacroBlockSize, y=Median, group=CC)) +
+  geom_point(position=position_jitter(h=0,w=0.2)) +
+  geom_line(aes( linetype=factor(CC), color=factor(CC) ))+
+  geom_point() +
+  labs( x = "Macro Block Size (MB)", y = "Median Latency (Second)", color = "CC", linetype="CC" )+
+  theme(legend.position="top",legend.box="vertical", legend.margin=margin()) +
+  scale_x_continuous(labels = as.character(filteredLatencyData$MacroBlockSize), breaks = filteredLatencyData$MacroBlockSize)
+
+```
+
+
+
+
+

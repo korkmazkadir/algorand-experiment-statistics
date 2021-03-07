@@ -21,7 +21,7 @@ library(tidyverse)
 library(data.table)
 
 
-dataFolderName <- "2021-03-05_16:00:03"
+dataFolderName <- "2021-03-07_13:53:01"
 
 # Folder which contains *.stat files
 dataFolderPath <- paste( "~/Git/experiment-automation/output/stats/", dataFolderName, sep="")
@@ -59,7 +59,8 @@ stats_sp <- separate(data = stats_df, col = Data, into = c(
               "ConsensusType",
               "BlockType",
               "BlockHash",
-              "PayloadSize"
+              "PayloadSize",
+              "ElectedAsLeader"
               ), convert = TRUE, sep = "\\\t")
 
 stats_sp$FileName <- stats_df$FileName
@@ -71,7 +72,7 @@ message_df <- separate(data = message_df, col = Data, into = c("Type","Round","B
 upload_df <- experiment_df %>% filter(str_detect(Data, 'upload-stat'))
 upload_df <- separate(data = upload_df, col = Data, into = c("Type","Receiver","MessageLength", "ElapsedTime"), convert = TRUE, sep = "\\\t")
 
-experiment_df <- stats_sp[, c("FileName", "Type", "NodeID", "MacroBlockSize",  "CC",  "Round", "BlockPropagation", "BAWithOutFinalStep", "BAWithFinalStep","ConsensusType", "BlockType","BlockHash", "PayloadSize")]
+experiment_df <- stats_sp[, c("FileName", "Type", "NodeID", "MacroBlockSize",  "CC",  "Round", "BlockPropagation", "BAWithOutFinalStep", "BAWithFinalStep","ConsensusType", "BlockType","BlockHash", "PayloadSize", "ElectedAsLeader")]
 
 number_of_machines <- nrow( experiment_df %>% group_by(FileName) %>% summarise(count = n()) )
 
@@ -320,9 +321,30 @@ kable(grouped)
 sum(grouped$Count)
 
 
+```
+
+# Leader count per round
+```{r, echo=FALSE}
+
+leaderCountsPerRound <- experiment_df %>% 
+                        group_by(Round) %>%
+                        summarise( LeaderCount = sum(ElectedAsLeader == "true"))
+
+hist(leaderCountsPerRound$LeaderCount, labels = TRUE, breaks = 10)
+
+summary(leaderCountsPerRound$LeaderCount)
+
+
+macroBlockSizePerRound<- experiment_df %>% distinct(Round, .keep_all= TRUE) %>% 
+                        group_by(PayloadSize) %>%
+                        summarise( Count = n())
+
+head(macroBlockSizePerRound)
+
 
 
 ```
+
 
 
 
